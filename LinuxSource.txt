@@ -1633,6 +1633,10 @@ function Linux.Create(config)
             Toggle:SetAttribute("State", State)
             
             local isToggling = false
+            local isDragToggle = false
+            local dragStartToggle = nil
+            local hasMovedToggle = false
+            
             local function UpdateToggle(thisToggle)
                 if isToggling then return end
                 isToggling = true
@@ -1684,7 +1688,7 @@ function Linux.Create(config)
             spawn(function() Linux:SafeCallback(config.Callback, State) end)
             
             local function toggleSwitch()
-                if not isToggling then
+                if not isToggling and not hasMovedToggle then
                     local newState = not Toggle:GetAttribute("State")
                     SetValue(newState)
                 end
@@ -1692,13 +1696,68 @@ function Linux.Create(config)
             
             ToggleTrack.InputBegan:Connect(function(input)
                 if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
-                    toggleSwitch()
+                    isDragToggle = true
+                    dragStartToggle = input.Position
+                    hasMovedToggle = false
+                end
+            end)
+            
+            ToggleTrack.InputChanged:Connect(function(input)
+                if isDragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStartToggle
+                    if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                        hasMovedToggle = true
+                    end
+                end
+            end)
+            
+            ToggleTrack.InputEnded:Connect(function(input)
+                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
+                    if isDragToggle then
+                        isDragToggle = false
+                        if not hasMovedToggle then
+                            toggleSwitch()
+                        end
+                        hasMovedToggle = false
+                    end
                 end
             end)
             
             ToggleKnob.InputBegan:Connect(function(input)
                 if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
-                    toggleSwitch()
+                    isDragToggle = true
+                    dragStartToggle = input.Position
+                    hasMovedToggle = false
+                end
+            end)
+            
+            ToggleKnob.InputChanged:Connect(function(input)
+                if isDragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStartToggle
+                    if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                        hasMovedToggle = true
+                    end
+                end
+            end)
+            
+            ToggleKnob.InputEnded:Connect(function(input)
+                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
+                    if isDragToggle then
+                        isDragToggle = false
+                        if not hasMovedToggle then
+                            toggleSwitch()
+                        end
+                        hasMovedToggle = false
+                    end
+                end
+            end)
+            
+            InputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    if isDragToggle then
+                        isDragToggle = false
+                        hasMovedToggle = false
+                    end
                 end
             end)
             
