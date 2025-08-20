@@ -1107,7 +1107,7 @@ function Linux.Create(config)
             Parent = TitleFrame,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, -20, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
+            Position = UDim2.new(0, 10, 0, 10),
             Font = Enum.Font.GothamBold,
             Text = config.Name,
             TextColor3 = Color3.fromRGB(230, 230, 240),
@@ -2505,6 +2505,7 @@ function Linux.Create(config)
             end
             
             local IsNumeric = config.Numeric or false
+            local Finished = config.Finished or false
             
             local TextBoxFrame = Linux.Instance("Frame", {
                 Parent = Input,
@@ -2610,10 +2611,20 @@ function Linux.Create(config)
             end
             
             TextBox.FocusLost:Connect(function(enterPressed)
-                if enterPressed then
+                if Finished then
+                    if enterPressed then
+                        UpdateInput()
+                    end
+                else
                     UpdateInput()
                 end
             end)
+            
+            if not Finished then
+                TextBox:GetPropertyChangedSignal("Text"):Connect(function()
+                    UpdateInput()
+                end)
+            end
             
             TextBox.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -2621,15 +2632,17 @@ function Linux.Create(config)
                 end
             end)
             
-            spawn(function()
-                local value = TextBox.Text
-                if IsNumeric and value ~= "" then
-                    local numValue = tonumber(value)
-                    Linux:SafeCallback(config.Callback, numValue or 0)
-                else
-                    Linux:SafeCallback(config.Callback, value)
-                end
-            end)
+            if not Finished then
+                spawn(function()
+                    local value = TextBox.Text
+                    if IsNumeric and value ~= "" then
+                        local numValue = tonumber(value)
+                        Linux:SafeCallback(config.Callback, numValue or 0)
+                    else
+                        Linux:SafeCallback(config.Callback, value)
+                    end
+                end)
+            end
             
             local function SetValue(newValue)
                 local text = tostring(newValue)
@@ -2643,7 +2656,9 @@ function Linux.Create(config)
                 end
                 
                 TextBox.Text = text
-                UpdateInput()
+                if not Finished then
+                    UpdateInput()
+                end
             end
             
             targetContainer.CanvasPosition = Vector2.new(0, 0)
